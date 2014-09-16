@@ -10,7 +10,6 @@ NSMAP = {'cas': CAS_URI}
 CAS = '{%s}' % CAS_URI
 
 from django.core.exceptions import ObjectDoesNotExist
-from student.models import UserProfile
 
 def populate_user(user, authentication_response):
     if authentication_response.find(CAS + 'authenticationSuccess/'  + CAS + 'attributes'  , namespaces=NSMAP) is not None:
@@ -32,6 +31,11 @@ def populate_user(user, authentication_response):
             user.email = attr.find(CAS + 'email', NSMAP).text
         
         # Here we handle things that go into UserProfile instead.
+        
+        # This is a dirty hack and you shouldn't do that. 
+        # However, I don't think it's going to work when imported outside of the function body.
+        
+        from student.models import UserProfile
         
         try:
             user_profile = UserProfile.objects.get(user=user)
