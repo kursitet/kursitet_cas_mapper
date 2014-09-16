@@ -36,16 +36,16 @@ def populate_user(user, authentication_response):
         # Here we handle things that go into UserProfile instead.
         
         try:
-			user_profile = UserProfile.objects.get(user=user)
-		except ObjectDoesNotExist:
+            user_profile = UserProfile.objects.get(user=user)
+        except ObjectDoesNotExist:
             user_profile = UserProfile(user=user)
             
-	    # There should be more variables, but let's settle on the actual model first.
+        # There should be more variables, but let's settle on the actual model first.
         if attr.find(CAS + 'fullName', NSMAP) is not None:
-			user_profile.name = attr.find(CAS + 'fullName', NSMAP).text
-	
-	    # Profile is always getting saved, just like the user,
-	    # but the user is getting saved by django_cas.
+            user_profile.name = attr.find(CAS + 'fullName', NSMAP).text
+    
+        # Profile is always getting saved, just like the user,
+        # but the user is getting saved by django_cas.
         user_profile.save()
         
     pass
