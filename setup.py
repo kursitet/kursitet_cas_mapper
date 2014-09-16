@@ -15,7 +15,8 @@ if "install" in sys.argv:
 
 EXCLUDE_FROM_PACKAGES = []
 
-version = __import__('kursitet_cas_mapper').VERSION
+# Annoying as it is, I can't import UserProfile during installation.
+version = "0.0.1"
 
 setup(
     name='kursitet_cas_mapper',

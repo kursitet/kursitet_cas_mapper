@@ -2,8 +2,6 @@
 Beyond the original function of CAS attribute mapper, this should also manage other objects...
 """ 
 
-VERSION = "0.0.1"
-
 # Note: In production this is supposed to be https.
 # I'm not even sure how to test that correctly without it...
 CAS_URI = 'https://kursitet.ru/cas'
