@@ -2,9 +2,7 @@
 Beyond the original function of CAS attribute mapper, this should also manage other objects...
 """ 
 
-# Note: In production this is supposed to be https.
-# I'm not even sure how to test that correctly without it...
-CAS_URI = 'https://kursitet.ru/cas'
+CAS_URI = 'http://www.yale.edu/tp/cas'
 
 NSMAP = {'cas': CAS_URI}
 CAS = '{%s}' % CAS_URI
