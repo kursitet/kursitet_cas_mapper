@@ -19,14 +19,17 @@ def populate_user(user, authentication_response):
         if attr.find(CAS + 'is_superuser', NSMAP) is not None:
             user.is_superuser = attr.find(CAS + 'is_superuser', NSMAP).text.upper() == 'TRUE'
 
+        # Limiting by maximum lengths.
+        # Max length of firstname/lastname is 30.
+        # Max length of a email is 75.
         if attr.find(CAS + 'givenName', NSMAP) is not None:
-            user.first_name = attr.find(CAS + 'givenName', NSMAP).text
+            user.first_name = attr.find(CAS + 'givenName', NSMAP).text[0:30]
 
         if attr.find(CAS + 'sn', NSMAP) is not None:
-            user.last_name = attr.find(CAS + 'sn', NSMAP).text
+            user.last_name = attr.find(CAS + 'sn', NSMAP).text[0:30]
 
         if attr.find(CAS + 'email', NSMAP) is not None:
-            user.email = attr.find(CAS + 'email', NSMAP).text
+            user.email = attr.find(CAS + 'email', NSMAP).text[0:75]
         
         # Here we handle things that go into UserProfile instead.
         
