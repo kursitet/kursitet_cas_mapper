@@ -7,8 +7,6 @@ CAS_URI = 'http://www.yale.edu/tp/cas'
 NSMAP = {'cas': CAS_URI}
 CAS = '{%s}' % CAS_URI
 
-from django.core.exceptions import ObjectDoesNotExist
-
 def populate_user(user, authentication_response):
     if authentication_response.find(CAS + 'authenticationSuccess/'  + CAS + 'attributes'  , namespaces=NSMAP) is not None:
         attr = authentication_response.find(CAS + 'authenticationSuccess/'  + CAS + 'attributes'  , namespaces=NSMAP)
@@ -40,7 +38,8 @@ def populate_user(user, authentication_response):
         
         try:
             user_profile = UserProfile.objects.get(user=user)
-        except ObjectDoesNotExist:
+        except UserProfile.DoesNotExist:
+            user.save()
             user_profile = UserProfile(user=user)
             
         # There should be more variables, but let's settle on the actual model first.
