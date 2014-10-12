@@ -7,6 +7,8 @@ CAS_URI = 'http://www.yale.edu/tp/cas'
 NSMAP = {'cas': CAS_URI}
 CAS = '{%s}' % CAS_URI
 
+import json
+
 def populate_user(user, authentication_response):
     if authentication_response.find(CAS + 'authenticationSuccess/'  + CAS + 'attributes'  , namespaces=NSMAP) is not None:
         attr = authentication_response.find(CAS + 'authenticationSuccess/'  + CAS + 'attributes'  , namespaces=NSMAP)
