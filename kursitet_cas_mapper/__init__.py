@@ -52,5 +52,26 @@ def populate_user(user, authentication_response):
         # Profile is always getting saved, just like the user,
         # but the user is getting saved by django_cas.
         user_profile.save()
+
+        # Now the really fun bit. Signing the user up for courses given.
+        
+        coursetag = attr.find(CAS + 'courses', NSMAP)
+        if coursetag is not None:
+            try:
+                courses = json.loads(coursetag.text)
+                assert isinstance(courses,list)
+            except (ValueError, AssertionError):
+                # We failed to parse the tag and get a list, so we leave.
+                return
+            # We got a list, so we need to import the enroll call.
+            from student.models import CourseEnrollment
+            for course in courses:
+                if course:
+                    # Notice that we don't check if a course by that ID actually exists!
+                    # We don't really have the time for this, 
+                    # (I seriously suspect this function is getting called more often than once per login)
+                    # and CourseEnrollment objects do no checking of their own.
+                    # Being enrolled in a deleted course should not be an issue though...
+                    CourseEnrollment.enroll(user,course)
         
     pass
