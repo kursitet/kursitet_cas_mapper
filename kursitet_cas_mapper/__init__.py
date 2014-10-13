@@ -67,6 +67,7 @@ def populate_user(user, authentication_response):
                 return
             # We got a list, so we need to import the enroll call.
             from student.models import CourseEnrollment
+            from opaque_keys.edx.locator import CourseLocator
             for course in courses:
                 if course:
                     # Notice that we don't check if a course by that ID actually exists!
@@ -74,6 +75,7 @@ def populate_user(user, authentication_response):
                     # (I seriously suspect this function is getting called more often than once per login)
                     # and CourseEnrollment objects do no checking of their own.
                     # Being enrolled in a deleted course should not be an issue though...
-                    CourseEnrollment.enroll(user,course)
+                    org, course, run = course.split('/')
+                    CourseEnrollment.enroll(user,CourseLocator.from_string(org=org,course=course,run=run))
         
     pass
