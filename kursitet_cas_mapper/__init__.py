@@ -76,6 +76,6 @@ def populate_user(user, authentication_response):
                     # and CourseEnrollment objects do no checking of their own.
                     # Being enrolled in a deleted course should not be an issue though...
                     org, course, run = course.split('/')
-                    CourseEnrollment.enroll(user,CourseLocator.from_string(org=org,course=course,run=run))
+                    CourseEnrollment.enroll(user,CourseLocator(org=org,course=course,run=run))
         
     pass
