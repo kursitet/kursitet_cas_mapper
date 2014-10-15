@@ -67,6 +67,8 @@ def populate_user(user, authentication_response):
         full_name = attr.find(CAS + 'fullName', NSMAP)
         if full_name is not None:
             user_profile.name = full_name.text or ''
+            
+        user_profile.save()
 
         # Now the really fun bit. Signing the user up for courses given.
 
