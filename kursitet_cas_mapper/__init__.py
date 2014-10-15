@@ -61,11 +61,14 @@ def populate_user(user, authentication_response):
         if full_name is not None:
             user_profile.name = full_name.text or ''
 
-        # Profile is always getting saved, just like the user,
-        # but the user is getting saved by django_cas.
-        if created:
-            user.save()
-        user_profile.save()
+        # If the user doesn't yet have a profile, it means it's a new one and we need to create it a profile.
+        # but we need to save the user first.
+        user.save()
+        
+        if not UserProfile.objects.filter(user=user):
+            user_profile = UserProfile(user=user, name=user.username)
+        else:
+            user_profile = UserProfile.objects.get(user=user)
 
         # Now the really fun bit. Signing the user up for courses given.
 
