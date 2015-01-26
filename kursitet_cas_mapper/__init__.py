@@ -92,5 +92,22 @@ def populate_user(user, authentication_response):
                     # Being enrolled in a deleted course should not be an issue though...
                     org, course, run = course.split('/')
                     CourseEnrollment.enroll(user,CourseLocator(org=org,course=course,run=run,deprecated=True))
+        
+        # We also unsubscribe people from courses here the same way.
+        anticoursetag = attr.find(CAS + 'unsubscribed_courses', NSMAP)
+        if anticoursetag is not None:
+            try:
+                anticourses = json.loads(anticoursetag.text)
+                assert isinstance(anticourses,list)
+            except (ValueError, AssertionError):
+                return
+            
+            # TODO: I need a more sensible way to parse either tag separately and only import if required.
+            from student.models import CourseEnrollment
+            for course in anticourses:
+                if course:
+                    # Notice that currently, unenroll method wants a course ID string,
+                    # not a course key object. They're going to change that eventually to my chagrin.
+                    CourseEnrollment.unenroll(user,course)
 
     pass
