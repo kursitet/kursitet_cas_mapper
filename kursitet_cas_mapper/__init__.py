@@ -73,6 +73,13 @@ def populate_user(user, authentication_response):
         # Now the really fun bit. Signing the user up for courses given.
 
         coursetag = attr.find(CAS + 'courses', NSMAP)
+        # We also unsubscribe people from courses here the same way.
+        anticoursetag = attr.find(CAS + 'unsubscribed_courses', NSMAP)
+
+        if coursetag is not None or anticoursetag is not None:
+            from student.models import CourseEnrollment
+            from opaque_keys.edx.locator import CourseLocator
+
         if coursetag is not None:
             try:
                 courses = json.loads(coursetag.text)
@@ -81,8 +88,6 @@ def populate_user(user, authentication_response):
                 # We failed to parse the tag and get a list, so we leave.
                 return
             # We got a list, so we need to import the enroll call.
-            from student.models import CourseEnrollment
-            from opaque_keys.edx.locator import CourseLocator
             for course in courses:
                 if course:
                     # Notice that we don't check if a course by that ID actually exists!
@@ -93,8 +98,6 @@ def populate_user(user, authentication_response):
                     org, course, run = course.split('/')
                     CourseEnrollment.enroll(user,CourseLocator(org=org,course=course,run=run,deprecated=True))
         
-        # We also unsubscribe people from courses here the same way.
-        anticoursetag = attr.find(CAS + 'unsubscribed_courses', NSMAP)
         if anticoursetag is not None:
             try:
                 anticourses = json.loads(anticoursetag.text)
@@ -103,11 +106,9 @@ def populate_user(user, authentication_response):
                 return
             
             # TODO: I need a more sensible way to parse either tag separately and only import if required.
-            from student.models import CourseEnrollment
             for course in anticourses:
                 if course:
-                    # Notice that currently, unenroll method wants a course ID string,
-                    # not a course key object. They're going to change that eventually to my chagrin.
-                    CourseEnrollment.unenroll(user,course)
+                    org, course, run = course.split('/')
+                    CourseEnrollment.unenroll(user,CourseLocator(org=org,course=course,run=run,deprecated=True))
 
     pass
