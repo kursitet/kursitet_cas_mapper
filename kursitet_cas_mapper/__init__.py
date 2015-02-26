@@ -76,9 +76,8 @@ def populate_user(user, authentication_response):
         # We also unsubscribe people from courses here the same way.
         anticoursetag = attr.find(CAS + 'unsubscribed_courses', NSMAP)
 
-        if coursetag is not None or anticoursetag is not None:
-            from student.models import CourseEnrollment
-            from opaque_keys.edx.locator import CourseLocator
+        from student.models import CourseEnrollment, CourseEnrollmentAllowed
+        from opaque_keys.edx.locator import CourseLocator
 
         if coursetag is not None:
             try:
@@ -110,5 +109,10 @@ def populate_user(user, authentication_response):
                 if course:
                     org, course, run = course.split('/')
                     CourseEnrollment.unenroll(user,CourseLocator(org=org,course=course,run=run,deprecated=True))
+                    
+        # Now implement CourseEnrollmentAllowed objects, because otherwise they will only ever fire when
+        # users click a link in the registration email -- which can never happen here.
+        for cea in CourseEnrollmentAllowed.objects.filter(email=user.email, auto_enroll=True):
+                CourseEnrollment.enroll(user, cea.course_id)
 
     pass
