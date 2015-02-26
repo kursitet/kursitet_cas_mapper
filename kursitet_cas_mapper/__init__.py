@@ -58,10 +58,7 @@ def populate_user(user, authentication_response):
         
         # If the user doesn't yet have a profile, it means it's a new one and we need to create it a profile.
         # but we need to save the user first.
-        if not UserProfile.objects.filter(user=user):
-            user_profile = UserProfile(user=user, name=user.username)
-        else:
-            user_profile = UserProfile.objects.get(user=user)
+        user_profile, created = UserProfile.objects.get_or_create(user=user, defaults={'name':user.username})
 
         # There should be more variables, but let's settle on the actual model first.
         full_name = attr.find(CAS + 'fullName', NSMAP)
@@ -76,9 +73,8 @@ def populate_user(user, authentication_response):
         # We also unsubscribe people from courses here the same way.
         anticoursetag = attr.find(CAS + 'unsubscribed_courses', NSMAP)
 
-        if coursetag is not None or anticoursetag is not None:
-            from student.models import CourseEnrollment
-            from opaque_keys.edx.locator import CourseLocator
+        from student.models import CourseEnrollment, CourseEnrollmentAllowed
+        from opaque_keys.edx.locator import CourseLocator
 
         if coursetag is not None:
             try:
@@ -110,5 +106,11 @@ def populate_user(user, authentication_response):
                 if course:
                     org, course, run = course.split('/')
                     CourseEnrollment.unenroll(user,CourseLocator(org=org,course=course,run=run,deprecated=True))
+                    
+        # Now implement CourseEnrollmentAllowed objects, because otherwise they will only ever fire when
+        # users click a link in the registration email -- which can never happen here.
+        if created:
+            for cea in CourseEnrollmentAllowed.objects.filter(email=user.email, auto_enroll=True):
+                    CourseEnrollment.enroll(user, cea.course_id)
 
     pass
