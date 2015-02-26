@@ -58,10 +58,7 @@ def populate_user(user, authentication_response):
         
         # If the user doesn't yet have a profile, it means it's a new one and we need to create it a profile.
         # but we need to save the user first.
-        if not UserProfile.objects.filter(user=user):
-            user_profile = UserProfile(user=user, name=user.username)
-        else:
-            user_profile = UserProfile.objects.get(user=user)
+        user_profile, created = UserProfile.objects.get_or_create(user=user, defaults={'name':user.username})
 
         # There should be more variables, but let's settle on the actual model first.
         full_name = attr.find(CAS + 'fullName', NSMAP)
@@ -112,7 +109,8 @@ def populate_user(user, authentication_response):
                     
         # Now implement CourseEnrollmentAllowed objects, because otherwise they will only ever fire when
         # users click a link in the registration email -- which can never happen here.
-        for cea in CourseEnrollmentAllowed.objects.filter(email=user.email, auto_enroll=True):
-                CourseEnrollment.enroll(user, cea.course_id)
+        if created:
+            for cea in CourseEnrollmentAllowed.objects.filter(email=user.email, auto_enroll=True):
+                    CourseEnrollment.enroll(user, cea.course_id)
 
     pass
