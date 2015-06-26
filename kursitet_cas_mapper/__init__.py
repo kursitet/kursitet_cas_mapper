@@ -90,7 +90,7 @@ def populate_user(user, authentication_response):
                 if course:
                     locator = CourseLocator.from_string(course)
                     try:
-                        course = modulestore().get_course(course_key)
+                        course = modulestore().get_course(locator)
                     except ItemNotFoundError:
                         continue
                     CourseEnrollment.enroll(user,locator)
@@ -107,7 +107,7 @@ def populate_user(user, authentication_response):
                 if course:
                     locator = CourseLocator.from_string(course)
                     try:
-                        course = modulestore().get_course(course_key)
+                        course = modulestore().get_course(locator)
                     except ItemNotFoundError:
                         continue
                     CourseEnrollment.unenroll(user,locator)
