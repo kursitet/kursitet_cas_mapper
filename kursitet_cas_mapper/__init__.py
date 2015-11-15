@@ -75,6 +75,8 @@ def populate_user(user, authentication_response):
 
         from student.models import CourseEnrollment, CourseEnrollmentAllowed
         from opaque_keys.edx.locator import CourseLocator
+        from xmodule.modulestore.django import modulestore
+        from xmodule.modulestore.exceptions import ItemNotFoundError
 
         if coursetag is not None:
             try:
@@ -86,13 +88,12 @@ def populate_user(user, authentication_response):
             # We got a list, so we need to import the enroll call.
             for course in courses:
                 if course:
-                    # Notice that we don't check if a course by that ID actually exists!
-                    # We don't really have the time for this,
-                    # (I seriously suspect this function is getting called more often than once per login)
-                    # and CourseEnrollment objects do no checking of their own.
-                    # Being enrolled in a deleted course should not be an issue though...
-                    org, course, run = course.split('/')
-                    CourseEnrollment.enroll(user,CourseLocator(org=org,course=course,run=run,deprecated=True))
+                    locator = CourseLocator.from_string(course)
+                    try:
+                        course = modulestore().get_course(locator)
+                    except ItemNotFoundError:
+                        continue
+                    CourseEnrollment.enroll(user,locator)
         
         if anticoursetag is not None:
             try:
@@ -104,8 +105,12 @@ def populate_user(user, authentication_response):
             # TODO: I need a more sensible way to parse either tag separately and only import if required.
             for course in anticourses:
                 if course:
-                    org, course, run = course.split('/')
-                    CourseEnrollment.unenroll(user,CourseLocator(org=org,course=course,run=run,deprecated=True))
+                    locator = CourseLocator.from_string(course)
+                    try:
+                        course = modulestore().get_course(locator)
+                    except ItemNotFoundError:
+                        continue
+                    CourseEnrollment.unenroll(user,locator)
                     
         # Now implement CourseEnrollmentAllowed objects, because otherwise they will only ever fire when
         # users click a link in the registration email -- which can never happen here.
