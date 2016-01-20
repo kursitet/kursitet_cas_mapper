@@ -94,8 +94,7 @@ def populate_user(user, authentication_response):
             # Now we need to unsub the user from courses for which they are not enrolled.
             for course in existing_enrollments:
                 if not course in courses:
-                    # NB: unenroll call uses a string, not key in current version.
-                    CourseEnrollment.unenroll(user, course)
+                    CourseEnrollment.unenroll(user, locator)
 
         # Now implement CourseEnrollmentAllowed objects, because otherwise they will only ever fire when
         # users click a link in the registration email -- which can never happen here.
