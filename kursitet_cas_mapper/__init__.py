@@ -50,12 +50,9 @@ def populate_user(user, authentication_response):
 
         from student.models import UserProfile
 
-        # We don't do that on old edX because it's so bloody fragile.
-        # On the new edX, logging in through CAS will also mean an unusable
-        # password inside.
         user.set_unusable_password()
         user.save()
-        
+
         # If the user doesn't yet have a profile, it means it's a new one and we need to create it a profile.
         # but we need to save the user first.
         user_profile, created = UserProfile.objects.get_or_create(user=user, defaults={'name':user.username})
@@ -64,16 +61,13 @@ def populate_user(user, authentication_response):
         full_name = attr.find(CAS + 'fullName', NSMAP)
         if full_name is not None:
             user_profile.name = full_name.text or ''
-            
+
         user_profile.save()
 
         # Now the really fun bit. Signing the user up for courses given.
-
         coursetag = attr.find(CAS + 'courses', NSMAP)
-        # We also unsubscribe people from courses here the same way.
-        anticoursetag = attr.find(CAS + 'unsubscribed_courses', NSMAP)
 
-        from student.models import CourseEnrollment, CourseEnrollmentAllowed
+        from student.models import CourseEnrollment
         from opaque_keys.edx.locator import CourseLocator
         from xmodule.modulestore.django import modulestore
         from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -85,37 +79,88 @@ def populate_user(user, authentication_response):
             except (ValueError, AssertionError):
                 # We failed to parse the tag and get a list, so we leave.
                 return
-            # We got a list, so we need to import the enroll call.
+
+            # We got a list. Compare it to existing enrollments.
+            existing_enrollments = CourseEnrollment.objects.filter(user=user, active=True).values_list('course_id',flat=True)
+
             for course in courses:
-                if course:
+                if course and not course in existing_enrollments:
                     locator = CourseLocator.from_string(course)
                     try:
                         course = modulestore().get_course(locator)
                     except ItemNotFoundError:
                         continue
                     CourseEnrollment.enroll(user,locator)
-        
-        if anticoursetag is not None:
-            try:
-                anticourses = json.loads(anticoursetag.text)
-                assert isinstance(anticourses,list)
-            except (ValueError, AssertionError):
-                return
-            
-            # TODO: I need a more sensible way to parse either tag separately and only import if required.
-            for course in anticourses:
-                if course:
-                    locator = CourseLocator.from_string(course)
-                    try:
-                        course = modulestore().get_course(locator)
-                    except ItemNotFoundError:
-                        continue
-                    CourseEnrollment.unenroll(user,locator)
-                    
+            # Now we need to unsub the user from courses for which they are not enrolled.
+            for course in existing_enrollments:
+                if not course in courses:
+                    # NB: unenroll call uses a string, not key in current version.
+                    CourseEnrollment.unenroll(user, course)
+
         # Now implement CourseEnrollmentAllowed objects, because otherwise they will only ever fire when
         # users click a link in the registration email -- which can never happen here.
+        # Considering the new setup, I doubt this will ever be useful.
         if created:
+            from student.models import CourseEnrollmentAllowed
             for cea in CourseEnrollmentAllowed.objects.filter(email=user.email, auto_enroll=True):
                     CourseEnrollment.enroll(user, cea.course_id)
 
+        # Now, deal with course administration packets.
+        course_admin_tag = attr.find(CAS + 'course_administration_update', NSMAP)
+
+        if course_admin_tag is not None:
+            try:
+                courses = json.loads(coursetag.text)
+                assert isinstance(courses,list)
+            except (ValueError, AssertionError):
+                # We failed to parse the tag, so we leave.
+                return
+
+            from instructor.access import list_with_level, allow_access, revoke_access
+            from django_comment_common.models import Role, FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR, FORUM_ROLE_COMMUNITY_TA
+            from django.contrib.auth.models import User
+
+            for course_id, admin_block in courses.iteritems():
+                locator = CourseLocator.from_string(course)
+                try:
+                    course = modulestore().get_course(locator)
+                except ItemNotFoundError:
+                    continue
+
+                # Course roles are relatively easy.
+                for block_name, role in [('admin','instructor'), ('staff','staff'), ('beta','beta')]:
+                    role_list = admin_block.get(block_name,[])
+                    existing = list_with_level(course,role)
+
+                    for username in role_list:
+                        try:
+                            user = User.objects.get(username=username)
+                        except User.DoesNotExist:
+                            continue
+                        if not user in existing:
+                            allow_access(course, user, role)
+                    for user in existing:
+                        if not user.username in role_list:
+                            revoke_access(course, user, role)
+
+                # Forum roles, considerably different.
+
+                for block_name, rolename in [('forum_admin',FORUM_ROLE_ADMINISTRATOR), ('forum_moderator',FORUM_ROLE_MODERATOR), ('forum_assistant',FORUM_ROLE_COMMUNITY_TA)]:
+                    role_list = admin_block.get(block_name,[])
+                    try:
+                        role = Role.objects.get(course_id=locator, name=rolename)
+                    except Role.DoesNotExist:
+                        continue
+                    existing = role.users.all()
+
+                    for user in existing:
+                        if not user.username in role_list:
+                            role.users.remove(user)
+                    for username in role_list:
+                        try:
+                            user = User.objects.get(username=username)
+                        except User.DoesNotExist:
+                            continue
+                        if not user in existing:
+                            role.users.add(user)
     pass
