@@ -81,7 +81,7 @@ def populate_user(user, authentication_response):
                 return
 
             # We got a list. Compare it to existing enrollments.
-            existing_enrollments = CourseEnrollment.objects.filter(user=user, active=True).values_list('course_id',flat=True)
+            existing_enrollments = CourseEnrollment.objects.filter(user=user, is_active=True).values_list('course_id',flat=True)
 
             for course in courses:
                 if course and not course in existing_enrollments:
