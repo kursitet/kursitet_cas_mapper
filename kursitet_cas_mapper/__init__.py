@@ -110,7 +110,7 @@ def populate_user(user, authentication_response):
 
         if course_admin_tag is not None:
             try:
-                courses = json.loads(coursetag.text)
+                courses = json.loads(course_admin_tag.text)
                 assert isinstance(courses,dict)
             except (ValueError, AssertionError):
                 # We failed to parse the tag, so we leave.
