@@ -94,6 +94,7 @@ def populate_user(user, authentication_response):
             # Now we need to unsub the user from courses for which they are not enrolled.
             for course in existing_enrollments:
                 if not course in courses:
+                    locator = CourseLocator.from_string(course)
                     CourseEnrollment.unenroll(user, locator)
 
         # Now implement CourseEnrollmentAllowed objects, because otherwise they will only ever fire when
