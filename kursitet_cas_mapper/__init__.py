@@ -69,6 +69,7 @@ def populate_user(user, authentication_response):
 
         from student.models import CourseEnrollment
         from opaque_keys.edx.locator import CourseLocator
+        from opaque_keys import InvalidKeyError
         from xmodule.modulestore.django import modulestore
         from xmodule.modulestore.exceptions import ItemNotFoundError
 
@@ -85,7 +86,10 @@ def populate_user(user, authentication_response):
 
             for course in courses:
                 if course and not course in existing_enrollments:
-                    locator = CourseLocator.from_string(course)
+                    try:
+                        locator = CourseLocator.from_string(course)
+                    except InvalidKeyError:
+                        continue
                     try:
                         course = modulestore().get_course(locator)
                     except ItemNotFoundError:
@@ -94,7 +98,10 @@ def populate_user(user, authentication_response):
             # Now we need to unsub the user from courses for which they are not enrolled.
             for course in existing_enrollments:
                 if not course in courses:
-                    locator = CourseLocator.from_string(course)
+                    try:
+                        locator = CourseLocator.from_string(course)
+                    except InvalidKeyError:
+                        continue
                     CourseEnrollment.unenroll(user, locator)
 
         # Now implement CourseEnrollmentAllowed objects, because otherwise they will only ever fire when
@@ -121,7 +128,10 @@ def populate_user(user, authentication_response):
             from django.contrib.auth.models import User
 
             for course_id, admin_block in courses.iteritems():
-                locator = CourseLocator.from_string(course)
+                try:
+                    locator = CourseLocator.from_string(course)
+                except InvalidKeyError:
+                    continue
                 try:
                     course = modulestore().get_course(locator)
                 except ItemNotFoundError:
