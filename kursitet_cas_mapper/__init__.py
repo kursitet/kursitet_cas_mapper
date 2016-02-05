@@ -8,6 +8,9 @@ NSMAP = {'cas': CAS_URI}
 CAS = '{%s}' % CAS_URI
 
 import json
+import logging
+
+log = logging.getLogger(__name__)
 
 def populate_user(user, authentication_response):
 
@@ -79,6 +82,7 @@ def populate_user(user, authentication_response):
                 assert isinstance(courses,list)
             except (ValueError, AssertionError):
                 # We failed to parse the tag and get a list, so we leave.
+                log.error("Course list failed to parse.")
                 return
 
             # We got a list. Compare it to existing enrollments.
@@ -89,10 +93,12 @@ def populate_user(user, authentication_response):
                     try:
                         locator = CourseLocator.from_string(course)
                     except InvalidKeyError:
+                        log.error("Invalid course identifier {}".format(course))
                         continue
                     try:
                         course = modulestore().get_course(locator)
                     except ItemNotFoundError:
+                        log.error("Course {} does not exist.".format(course))
                         continue
                     CourseEnrollment.enroll(user,locator)
             # Now we need to unsub the user from courses for which they are not enrolled.
@@ -101,6 +107,7 @@ def populate_user(user, authentication_response):
                     try:
                         locator = CourseLocator.from_string(course)
                     except InvalidKeyError:
+                        log.error("Invalid course identifier {} in existing enrollments.".format(course))
                         continue
                     CourseEnrollment.unenroll(user, locator)
 
@@ -121,6 +128,7 @@ def populate_user(user, authentication_response):
                 assert isinstance(courses,dict)
             except (ValueError, AssertionError):
                 # We failed to parse the tag, so we leave.
+                log.error("Could not parse course administration block.")
                 return
 
             from instructor.access import list_with_level, allow_access, revoke_access
@@ -131,10 +139,12 @@ def populate_user(user, authentication_response):
                 try:
                     locator = CourseLocator.from_string(course)
                 except InvalidKeyError:
+                    log.error("Invalid course identifier {}".format(course))
                     continue
                 try:
                     course = modulestore().get_course(locator)
                 except ItemNotFoundError:
+                    log.error("Course {} does not exist.".format(course))
                     continue
 
                 # Course roles are relatively easy.
