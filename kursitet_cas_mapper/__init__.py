@@ -92,7 +92,7 @@ def populate_user(user, authentication_response):
                 if course and not course in existing_enrollments:
                     try:
                         locator = CourseLocator.from_string(course)
-                    except InvalidKeyError:
+                    except (InvalidKeyError, AttributeError) as e:
                         log.error("Invalid course identifier {}".format(course))
                         continue
                     try:
@@ -106,7 +106,7 @@ def populate_user(user, authentication_response):
                 if not course in courses:
                     try:
                         locator = CourseLocator.from_string(course)
-                    except InvalidKeyError:
+                    except (InvalidKeyError, AttributeError) as e:
                         log.error("Invalid course identifier {} in existing enrollments.".format(course))
                         continue
                     CourseEnrollment.unenroll(user, locator)
@@ -128,7 +128,7 @@ def populate_user(user, authentication_response):
                 assert isinstance(courses,dict)
             except (ValueError, AssertionError):
                 # We failed to parse the tag, so we leave.
-                log.error("Could not parse course administration block.")
+                log.error("Could not parse course administration block: <<{}>>".format(course_admin_tag.text))
                 return
 
             from instructor.access import list_with_level, allow_access, revoke_access
@@ -138,7 +138,7 @@ def populate_user(user, authentication_response):
             for course_id, admin_block in courses.iteritems():
                 try:
                     locator = CourseLocator.from_string(course)
-                except InvalidKeyError:
+                except (InvalidKeyError, AttributeError) as e:
                     log.error("Invalid course identifier {}".format(course))
                     continue
                 try:
