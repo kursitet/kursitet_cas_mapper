@@ -137,14 +137,14 @@ def populate_user(user, authentication_response):
 
             for course_id, admin_block in courses.iteritems():
                 try:
-                    locator = CourseLocator.from_string(course)
+                    locator = CourseLocator.from_string(course_id)
                 except (InvalidKeyError, AttributeError) as e:
-                    log.error("Invalid course identifier {}".format(course))
+                    log.error("Invalid course identifier {}".format(course_id))
                     continue
                 try:
                     course = modulestore().get_course(locator)
                 except ItemNotFoundError:
-                    log.error("Course {} does not exist.".format(course))
+                    log.error("Course {} does not exist.".format(course_id))
                     continue
 
                 # Course roles are relatively easy.
