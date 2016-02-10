@@ -147,6 +147,9 @@ def populate_user(user, authentication_response):
                     log.error("Course {} does not exist.".format(course_id))
                     continue
 
+                if not course:
+                    continue
+
                 # Course roles are relatively easy.
                 for block_name, role in [('admin','instructor'), ('staff','staff'), ('beta','beta')]:
                     role_list = admin_block.get(block_name,[])
