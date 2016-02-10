@@ -162,6 +162,10 @@ def populate_user(user, authentication_response):
                             continue
                         if not user in existing:
                             allow_access(course, user, role)
+                            try:
+                                CourseEnrollment.enroll(user, locator)
+                            except:
+                                pass
                     for user in existing:
                         if not user.username in role_list:
                             revoke_access(course, user, role)
@@ -186,4 +190,9 @@ def populate_user(user, authentication_response):
                             continue
                         if not user in existing:
                             role.users.add(user)
+                            try:
+                                CourseEnrollment.enroll(user, locator)
+                            except:
+                                pass
+
     pass
