@@ -53,7 +53,10 @@ def populate_user(user, authentication_response):
 
         from student.models import UserProfile
 
-        user.set_unusable_password()
+        # Make the user's password unusable. But only if they don't have an unusable password already,
+        # to prevent SessionAuthenticationMiddleware from logging them out because their password changed.
+        if user.has_usable_password():
+            user.set_unusable_password()
         user.save()
 
         # If the user doesn't yet have a profile, it means it's a new one and we need to create it a profile.
